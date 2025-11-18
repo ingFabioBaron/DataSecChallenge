@@ -79,3 +79,8 @@ Thumbs.db
 Thumbs.db:encryptable
 Desktop.ini
 $RECYC
+
+# =======================
+# SISTEMA OPERATIVO
+# =======================
+database.sqlite3
