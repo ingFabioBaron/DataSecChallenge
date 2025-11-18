@@ -8,7 +8,6 @@
 PYTHON = poetry run python
 PYTEST = poetry run pytest --log-cli-level=INFO
 RUFF   = poetry run ruff
-BLACK  = poetry run black
 
 # ===========================
 # Instalación de dependencias

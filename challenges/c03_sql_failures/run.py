@@ -29,9 +29,11 @@ def main() -> None:
     logger.info(f"[CH03] Executing query: {QUERY_SQL.name}")
     rows = run_applicant_query(str(QUERY_SQL))
 
+    logger.info("[CH03] ===============================")
     logger.info("[CH03] Query Results:")
     for row in rows:
         logger.info(dict(row))
+    logger.info("[CH03] ===============================")
 
     logger.info("[CH03] Challenge 3 execution complete.")
 

@@ -1,5 +1,9 @@
-    select cus.id id,
-           CONCAT(cus.first_name, ' ', cus.last_name) AS customer,
+-- ------------------------------------------------------------------------
+-- SQL: Query to retrieve all the customer with more than 3 failure events
+-- ------------------------------------------------------------------------
+    /* select * from campaigns cam*/
+
+    select CONCAT(cus.first_name, ' ', cus.last_name) AS customer,
            COUNT(eve.status) AS failures
       from customers cus,
            campaigns cam,
