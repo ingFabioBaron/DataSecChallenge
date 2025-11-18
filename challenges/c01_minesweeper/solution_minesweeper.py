@@ -32,13 +32,13 @@ def count_neighbouring_mines(board: list) -> list:
         Exceptions raised by validate_input (ValueError, TypeError).
     """
     # Run all input validations first. An exception is raised if validation fails.
-    validate_input(board)
+    _validate_input(board)
 
     rows = len(board)
     cols = len(board[0]) # input is guaranteed to be rectangular by the validation function.
 
     logger.info(f"Board dimensions: (rows, cols) = ({rows}, {cols})")
-    print_board(board)
+    _print_board(board)
 
     # Initialize the result matrix with zeros
     result = [[0 for _ in range(cols)] for _ in range(rows)]
@@ -67,17 +67,17 @@ def count_neighbouring_mines(board: list) -> list:
                 result[r][c] = count
 
     logger.info(f"Result Board dimensions: (rows, cols) = ({rows}, {cols})")
-    print_board(result)
+    _print_board(result)
 
     return result
 
-def print_board(board: list) -> None:
+def _print_board(board: list) -> None:
     logger.info("--- Board ---")
     for row in board:
         logger.info(row)
 
 
-def validate_input(board: list) -> None:
+def _validate_input(board: list) -> None:
     """
     Performs all necessary validations on the Minesweeper board.
     It ensures the input is a non-None, rectangular 2D list containing

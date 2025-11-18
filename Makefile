@@ -17,16 +17,10 @@ install:
 	poetry install
 
 # ===========================
-# Linter y formateador
+# Linter
 # ===========================
 lint:
 	$(RUFF) check .
-
-fmt:
-	$(BLACK) .
-
-fmt-check:
-	$(BLACK) --check .
 
 # ===========================
 # Tests
@@ -38,12 +32,10 @@ test:
 # Ejecutar Challenges
 # ===========================
 run-ch1:
-	$(PYTHON) challenges/c01_minesweeper/solution_minesweeper.py
+	$(PYTHON) challenges/c01_minesweeper/run.py
 
-# Aquí se agregarán comandos para los retos 2, 3 y 4 cuando los implementemos.
-# Ejemplo (futuro):
-# run-ch2:
-# 	$(PYTHON) challenges/c02_best_in_genre/solution_best_in_genre.py
+run-ch2:
+	$(PYTHON) challenges/c02_best_in_genre/run.py
 
 # ===========================
 # Limpieza
@@ -64,7 +56,5 @@ help:
 	@echo "  make install        -> Instala dependencias con Poetry"
 	@echo "  make test           -> Ejecuta los tests con Pytest"
 	@echo "  make lint           -> Ejecuta ruff"
-	@echo "  make fmt            -> Formatea el código con Black"
-	@echo "  make fmt-check      -> Verifica formato sin modificar archivos"
 	@echo "  make run-ch1        -> Ejecuta el Challenge 1"
 	@echo "  make clean          -> Limpia archivos temporales"

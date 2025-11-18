@@ -1,16 +1,34 @@
-# Challenge 1 – Minesweeper
+# Challenge 1 — Minesweeper Neighbour Counter
 
-Este reto consiste en implementar la función obligatoria definida en el documento oficial:
+## 📝 Descripción General
+Este challenge implementa la lógica del juego **Minesweeper**: para cada celda del tablero se calcula cuántas minas hay en las 8 posiciones adyacentes.
 
-```
+- **Input**: matriz 2D de enteros:
+  - `0` → espacio vacío
+  - `1` → mina
+- **Output**: matriz 2D de enteros del mismo tamaño:
+  - `9` → indica que la celda original contenía una mina
+  - `0-8` → número de minas vecinas en las 8 direcciones
+
+Problema: recorrido matricial, control de límites y conteo local.
+
+---
+
+## ✅ Requerimientos formales (firma obligatoria)
+
+**Función obligatoria:**
+```python
 def count_neighbouring_mines(board: list) -> list:
-```
+    """
+    Counts neighbouring mines for each cell in a Minesweeper board.
 
-La función recibe un tablero representado como una lista de listas con valores **0** (vacío)  
-y **1** (mina). La salida debe ser una nueva matriz donde:
+    Parameters:
+        board (list): A 2D list where 0 represents an empty space and 1 represents a mine.
 
-- Las minas se representan como **9**  
-- Cada celda vacía contiene la cantidad de minas adyacentes (en las 8 direcciones)
+    Returns:
+        list: A 2D list where each cell contains the count of neighbouring mines,
+              or 9 if the cell contains a mine.
+    """
 
 ---
 
@@ -21,8 +39,11 @@ y **1** (mina). La salida debe ser una nueva matriz donde:
 ```
 [
   [0, 1, 0, 0],
+
   [0, 0, 1, 0],
+
   [0, 1, 0, 1],
+
   [1, 1, 0, 0]
 ]
 ```
@@ -119,12 +140,3 @@ c01_minesweeper/
 
 ---
 
-# ✔ Estado del reto
-
-Este reto ya está implementado siguiendo:
-
-- Python 3.11.9  
-- La firma estricta requerida por el PDF  
-- Buenas prácticas de diseño y testeo  
-
----
