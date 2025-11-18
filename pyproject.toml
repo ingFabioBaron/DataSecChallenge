@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "datasec-challenge"
+version = "0.1.0"
+description = "Mercado Libre DataSec Challenge – Implementación en Python"
+authors = ["Fabio"]
+readme = "README.md"
+
+# Incluir todos los módulos dentro de la carpeta "challenges/"
+packages = [
+    { include = "challenges", from = "." }
+]
+
+[tool.poetry.dependencies]
+python = "3.11.9"
+
+# Dependencias de desarrollo
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.0.0"
+ruff = "^0.6.0"
+python-dotenv = "^1.0.1"
+
+# ======================
+# Configuración de Ruff
+# ======================
+[tool.ruff]
+line-length = 100
+lint.select = ["E", "F", "I"]
+lint.ignore = []
+exclude = [
+    "docs/",
+    ".venv/",
+    "__pycache__/",
+]
+
+# ======================
+# Configuración de Black
+# ======================
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+# ======================
+# Configuración de Pytest
+# ======================
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "-q"
