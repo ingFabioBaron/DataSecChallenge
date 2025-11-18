@@ -37,6 +37,9 @@ run-ch1:
 run-ch2:
 	$(PYTHON) challenges/c02_best_in_genre/run.py
 
+run-ch3:
+	$(PYTHON) challenges/c03_sql_failures/run.py
+
 # ===========================
 # Limpieza
 # ===========================

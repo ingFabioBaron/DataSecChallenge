@@ -15,6 +15,7 @@ python = "3.11.9"
 
 # Dependencias de desarrollo
 requests = "^2.32.5"
+dotenv = "^0.9.9"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 black = "^24.0.0"
