@@ -1,5 +1,16 @@
+"""
+Summarizer module for Hugging Face LLM.
+
+Provides functionality to:
+- Load text from a file (default or user-provided).
+- Summarize text using a Hugging Face model.
+- Format bullet-point summaries.
+- Validate API token and model usage.
+"""
+
 import os
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
@@ -14,8 +25,21 @@ BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_ARTICLE = BASE_DIR / "articles" / "article.txt"
 DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 
-def load_article(path: str | None) -> str:
-    """Carga el texto desde archivo, usando article.txt si no se proporciona ruta."""
+
+def _load_article(path: Optional[str]) -> str:
+    """
+    Loads the text from a file.
+    Uses DEFAULT_ARTICLE if path is not provided.
+
+    Args:
+        path (Optional[str]): Path to the article file.
+
+    Returns:
+        str: Content of the article.
+
+    Raises:
+        SystemExit: If file does not exist.
+    """
     if path:
         file_path = Path(path)
         if not file_path.is_absolute():
@@ -32,52 +56,75 @@ def load_article(path: str | None) -> str:
     return file_path.read_text(encoding="utf-8")
 
 
-def format_bullets(text: str) -> str:
-    """Asegura que cada línea en modo bullet tenga prefijo '- '."""
+def _format_bullets(text: str) -> str:
+    """
+    Ensures each line is formatted as a bullet point prefixed with '- '.
+
+    Args:
+        text (str): Input text.
+
+    Returns:
+        str: Bullet-point formatted text.
+    """
     lines = [line.strip("• ").strip() for line in text.split("\n") if line.strip()]
-    return "\n".join(f"{line}" for line in lines)
+    return "\n".join(f"- {line}" for line in lines)
 
 
-def summarize(text_path: str, summary_type: str, cli_model=None, cli_token=None) -> str:
+def summarize(
+    text_path: Optional[str],
+    summary_type: str,
+    cli_model: Optional[str] = None,
+    cli_token: Optional[str] = None,
+) -> str:
     """
-    Función principal usada por el CLI.
+    Main function for summarization. Can be called from CLI.
+
+    Args:
+        text_path (Optional[str]): Path to the text file.
+        summary_type (str): 'short', 'medium', or 'bullet'.
+        cli_model (Optional[str]): Hugging Face model override.
+        cli_token (Optional[str]): Hugging Face API token override.
+
+    Returns:
+        str: Generated summary with metrics appended.
+
+    Raises:
+        SystemExit: If token is missing or API fails.
     """
-    # Token obligatorio
+    # Token validation
     token = cli_token or os.getenv("HF_API_TOKEN")
     if not token:
-        logger.error("""
-            ❌ ERROR: No se detectó HF_API_TOKEN.
-            
-            Por favor configúralo antes de continuar:
-                setx HF_API_TOKEN "tu_token_aquí"   (Windows)
-                export HF_API_TOKEN="tu_token_aquí" (Linux/Mac)
-            
-            Obtén tu token en: https://huggingface.co/settings/tokens
-        """)
+        logger.error(
+            "\n❌ ERROR: No HF_API_TOKEN detected.\n\n"
+            "Please set it before continuing:\n"
+            "    setx HF_API_TOKEN \"your_token_here\"   (Windows)\n"
+            "    export HF_API_TOKEN=\"your_token_here\" (Linux/Mac)\n\n"
+            "Obtain your token at: https://huggingface.co/settings/tokens"
+        )
         raise SystemExit(1)
 
-    # Modelo
+    # Model selection
     model = cli_model or os.getenv("HF_MODEL") or DEFAULT_MODEL
     logger.info(f"[HF] Using model: {model}")
 
-    # Cargar texto
-    text = load_article(text_path)
+    # Load text
+    text = _load_article(text_path)
 
-    # Crear cliente HF
+    # Create Hugging Face client
     client = InferenceClient(token=token)
 
-    # System prompt según tipo
+    # System prompts
     system_prompts = {
         "short": "You create very concise summaries (1–2 sentences).",
         "medium": "You create paragraph-length summaries.",
-        "bullet": "You create bullet-point summaries using dashes (-)."
+        "bullet": "You create bullet-point summaries using dashes (-).",
     }
 
-    # User prompts según tipo
+    # User prompts
     user_prompts = {
         "short": f"Summarize in 1–2 sentences:\n\n{text}",
         "medium": f"Summarize this text into one paragraph:\n\n{text}",
-        "bullet": f"Summarize this text into bullet points using dashes (-):\n\n{text}"
+        "bullet": f"Summarize this text into bullet points using dashes (-):\n\n{text}",
     }
 
     system_prompt = system_prompts.get(summary_type, system_prompts["medium"])
@@ -85,28 +132,28 @@ def summarize(text_path: str, summary_type: str, cli_model=None, cli_token=None)
 
     logger.info("[HF] Sending summarization request...")
 
+    # Request summarization
     try:
         response = client.chat_completion(
             model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
             max_tokens=300,
-            temperature=0.0
+            temperature=0.0,
         )
-
-    except Exception as e:
-        logger.error(f"[HF] API Error: {e}")
+    except Exception as error:
+        logger.error(f"[HF] API Error: {error}")
         raise SystemExit(1)
 
     summary = response.choices[0].message.content.strip()
 
-    # Si es bullet → formatear
+    # Format bullets if requested
     if summary_type == "bullet":
-        summary = format_bullets(summary)
+        summary = _format_bullets(summary)
 
-    # Métricas
+    # Metrics calculation
     original_chars = len(text)
     summary_chars = len(summary)
     reduction = 100 - int((summary_chars / original_chars) * 100)

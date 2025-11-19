@@ -3,128 +3,117 @@ from common.logging_config import get_logger
 logger = get_logger(__name__)
 
 # --- CONSTANTS ---
-INPUT_MINE_INDICATOR:  int = 1
-INPUT_EMPTY_SPACE:     int = 0
-OUTPUT_MINE_INDICATOR: int = 9
+MINE_INDICATOR = 1
+EMPTY_INDICATOR = 0
+OUTPUT_MINE = 9
 
-DIRECTIONS = [ # Directions for the 8 neighbors (dr=delta row, dc=delta column)
+# Directions for the 8 neighbors (delta_row, delta_col)
+_NEIGHBOR_DIRECTIONS = [
     (-1, -1), (-1, 0), (-1, 1),
     ( 0, -1),          ( 0, 1),
     ( 1, -1), ( 1, 0), ( 1, 1)
 ]
 
+
 def count_neighbouring_mines(board: list) -> list:
     """
-    Counts neighbouring mines for each cell in a Minesweeper board.
-    All input validations are handled by the 'validate_input' function prior to execution.
+    Public function to calculate the number of neighboring mines for each cell
+    in a Minesweeper board. The input board is expected to be validated.
 
-    Parameters:
-        board (list): A validated 2D list (matrix) where 0 represents an empty space
-                      and 1 represents a mine.
+    Each cell in the returned board contains either:
+        - OUTPUT_MINE (9) if the cell is a mine.
+        - The count of adjacent mines (0-8) if the cell is empty.
+
+    Args:
+        board (list): 2D list representing the Minesweeper board
+                      where EMPTY_INDICATOR (0) is an empty cell and
+                      MINE_INDICATOR (1) is a mine.
 
     Returns:
-        list: A 2D list (matrix) of the same dimensions where each cell contains:
-              - 9 if the input cell contained a mine (1) (This value is commonly used
-                to denote a mine in the resulting board).
-              - otherwise the count of neighbouring mines (0-8).
+        list: 2D list of the same size with mine counts or OUTPUT_MINE.
 
     Raises:
-        Exceptions raised by validate_input (ValueError, TypeError).
+        ValueError: If the board is invalid (non-rectangular, invalid values, etc.).
+        TypeError: If the board or rows are not lists.
     """
-    # Run all input validations first. An exception is raised if validation fails.
-    _validate_input(board)
+    _validate_board(board)
 
     rows = len(board)
-    cols = len(board[0]) # input is guaranteed to be rectangular by the validation function.
+    cols = len(board[0]) if rows > 0 else 0
 
-    logger.info(f"Board dimensions: (rows, cols) = ({rows}, {cols})")
-    _print_board(board)
+    logger.info(f"Board dimensions: rows={rows}, cols={cols}")
+    _log_board(board)
 
-    # Initialize the result matrix with zeros
-    result = [[0 for _ in range(cols)] for _ in range(rows)]
+    # Initialize result board with zeros
+    result_board = [[0 for _ in range(cols)] for _ in range(rows)]
 
-    # --- Minesweeper Logic ---
-    for r in range(rows):
-        for c in range(cols):
-            # If the cell is a mine (1), mark it as 9 in the result
-            if board[r][c] == INPUT_MINE_INDICATOR:
-                result[r][c] = OUTPUT_MINE_INDICATOR
+    # --- Minesweeper logic ---
+    for row in range(rows):
+        for col in range(cols):
+            if board[row][col] == MINE_INDICATOR:
+                result_board[row][col] = OUTPUT_MINE
             else:
-                # If the cell is empty (0), calculate the neighbor mine count
-                count = 0
-                for dr, dc in DIRECTIONS:
-                    nr, nc = r + dr, c + dc  # Neighbor coordinates (new row, new col)
+                mine_count = 0
+                for dr, dc in _NEIGHBOR_DIRECTIONS:
+                    neighbor_row, neighbor_col = row + dr, col + dc
+                    if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols:
+                        if board[neighbor_row][neighbor_col] == MINE_INDICATOR:
+                            mine_count += 1
+                result_board[row][col] = mine_count
 
-                    # Boundary check: ensure the neighbor is within the grid limits
-                    is_in_bounds = (0 <= nr < rows) and (0 <= nc < cols)
+    logger.info(f"Result board dimensions: rows={rows}, cols={cols}")
+    _log_board(result_board)
 
-                    if is_in_bounds:
-                        # If the neighbor is a mine (1), increment the count
-                        if board[nr][nc] == INPUT_MINE_INDICATOR:
-                            count += 1
+    return result_board
 
-                # Assign the final count to the empty cell
-                result[r][c] = count
 
-    logger.info(f"Result Board dimensions: (rows, cols) = ({rows}, {cols})")
-    _print_board(result)
+def _log_board(board: list[list[int]]) -> None:
+    """
+    Private helper function to log the Minesweeper board row by row.
 
-    return result
-
-def _print_board(board: list) -> None:
+    Args:
+        board (list[list[int]]): 2D list to log.
+    """
     logger.info("--- Board ---")
     for row in board:
         logger.info(row)
 
 
-def _validate_input(board: list) -> None:
+def _validate_board(board: list[list[int]]) -> None:
     """
-    Performs all necessary validations on the Minesweeper board.
-    It ensures the input is a non-None, rectangular 2D list containing
-    only integer values of 0 or 1.
+    Private helper function to validate the Minesweeper board.
+
+    Ensures the board is:
+        - Not None
+        - A 2D rectangular list
+        - Contains only EMPTY_INDICATOR (0) or MINE_INDICATOR (1) values
 
     Args:
-        board (list): The 2D list (matrix) to validate.
+        board (list[list[int]]): Board to validate.
 
     Raises:
-        ValueError: If board is None, non-rectangular, or contains invalid values (not 0 or 1).
-        TypeError: If board or its rows are not lists.
+        ValueError: If the board is None, non-rectangular, or contains invalid values.
+        TypeError: If the board or its rows are not lists.
     """
-    # 1. Validation for None
     if board is None:
-        raise ValueError("board must not be None")
+        raise ValueError("Board must not be None")
 
-    # 2. Top-level Type Validation
     if not isinstance(board, list):
-        raise TypeError("board must be a list (2D list)")
+        raise TypeError("Board must be a list of lists")
 
-    rows = len(board)
-    if rows == 0:
-        return  # Empty board is considered valid
+    if len(board) == 0:
+        return  # Empty board is valid
 
-    cols = None
+    num_cols = len(board[0])
 
-    # 3. Row and Element Validation
-    for i, row in enumerate(board):
-        # 3.1. Row Type Validation
+    for row_index, row in enumerate(board):
         if not isinstance(row, list):
-            raise TypeError(f"Each row must be a list (row {i} is {type(row)})")
-
-        # 3.2. Column Count and Rectangularity Validation
-        if cols is None:
-            # Set column count based on the first row
-            cols = len(row)
-        elif len(row) != cols:
-            # Check if all subsequent rows match the first row's length
+            raise TypeError(f"Row {row_index} must be a list, got {type(row)}")
+        if len(row) != num_cols:
             raise ValueError("All rows must have the same number of columns (rectangular board)")
-
-        # 3.3. Value Validation
-        for j, val in enumerate(row):
-            # Check if values are restricted to 0 or 1
-            if val not in (INPUT_EMPTY_SPACE, INPUT_MINE_INDICATOR):
-                raise ValueError(f"Board values must be {INPUT_EMPTY_SPACE}] "
-                                 f"or {INPUT_MINE_INDICATOR}. "
-                                 f"Found {val} at ({i},{j})")
-
-    # if no error then return...
-    return
+        for col_index, value in enumerate(row):
+            if value not in (EMPTY_INDICATOR, MINE_INDICATOR):
+                raise ValueError(
+                    f"Invalid value {value} at ({row_index},{col_index}). "
+                    f"Expected {EMPTY_INDICATOR} or {MINE_INDICATOR}"
+                )

@@ -11,6 +11,16 @@ REQUEST_TIMEOUT = 5  # seconds
 
 
 def _validate_genre(genre: str) -> None:
+    """
+    Validates the genre input.
+
+    Args:
+        genre (str): The genre string to validate.
+
+    Raises:
+        TypeError: If genre is not a string.
+        ValueError: If genre is empty or only whitespace.
+    """
     if not isinstance(genre, str):
         raise TypeError("genre must be a string")
     if genre.strip() == "":
@@ -18,25 +28,37 @@ def _validate_genre(genre: str) -> None:
 
 
 def _normalize_genre_token(token: str) -> str:
-    # Use casefold for robust case-insensitive comparison
+    """
+    Normalizes a genre token for robust, case-insensitive comparison.
+
+    Args:
+        token (str): Genre token to normalize.
+
+    Returns:
+        str: Normalized token (casefolded and stripped).
+    """
     return token.strip().casefold()
 
 
 def _get_json_page(page: int) -> dict:
     """
-    Internal helper to fetch a single page from the API.
-    Returns the JSON dict on success, or None on failure.
+    Internal helper to fetch a single page from the TV series API.
+
+    Args:
+        page (int): Page number to fetch.
+
+    Returns:
+        dict: JSON response as dictionary on success, empty dict on failure.
     """
     try:
-        resp = requests.get(BASE_URL, params={"page": page}, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        data = resp.json()
-        return data
+        response = requests.get(BASE_URL, params={"page": page}, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        return response.json()
     except RequestException as e:
-        logger.error("Network error when requesting page %d: %s", page, str(e))
+        logger.error(f"Network error when requesting page {page}: {e}")
         return {}
     except ValueError as e:
-        logger.error("Invalid JSON on page %d: %s", page, str(e))
+        logger.error(f"Invalid JSON on page {page}: {e}")
         return {}
 
 
@@ -44,24 +66,21 @@ def bestInGenre(genre: str) -> str:
     """
     Finds the highest-rated TV series in the given genre.
 
-    Parameters:
-        genre (str): The genre to search for (e.g., 'Action', 'Comedy', 'Drama').
+    Genre matching is case-insensitive. In case of ties, the alphabetically
+    lower name is returned. Iterates through all API pages.
+
+    Args:
+        genre (str): Genre to search for (e.g., 'Action', 'Comedy').
 
     Returns:
-        str: The name of the highest-rated show in the genre. If there is a tie,
-             returns the alphabetically lower name. If no show found or on fatal
-             API/network errors, returns an empty string "".
-
-    Notes:
-    - Genre matching is case-insensitive and splits the 'genre' field by commas.
-    - The API is paginated; this function iterates all pages.
-    - imdb_rating is parsed as float; missing or malformed ratings are treated as 0.0.
+        str: Name of the highest-rated TV series. Returns empty string if no match
+        or fatal API/network errors.
     """
     # Validate input
     _validate_genre(genre)
     search_token = genre.casefold().strip()
 
-    logger.info("Searching best show for genre: '%s'", genre)
+    logger.info(f"Searching best show for genre: '{genre}'")
 
     page = 1
     best_name = ""
@@ -70,75 +89,63 @@ def bestInGenre(genre: str) -> str:
     processed_items = 0
 
     while True:
-        logger.debug("Fetching page %d", page)
+        logger.debug(f"Fetching page {page}")
         data = _get_json_page(page)
         if data is None:
-            # Network or JSON error: decide to abort and return empty string
-            logger.error("Aborting search due to API/network error on page %d", page)
+            logger.error(f"Aborting search due to API/network error on page {page}")
             return ""
 
-        # On first page, capture total_pages if present
+        # Capture total pages on first page
         if total_pages is None:
-            total_pages = data.get("total_pages", None)
-            logger.debug("Total pages reported by API: %s", str(total_pages))
+            total_pages = data.get("total_pages")
+            logger.debug(f"Total pages reported by API: {total_pages}")
 
         items = data.get("data", [])
         for item in items:
             processed_items += 1
+
             # Extract fields safely
             name = item.get("name", "")
             genre_field = item.get("genre", "")
-            # Parse imdb_rating robustly
             raw_rating = item.get("imdb_rating", 0)
+
+            # Parse IMDb rating robustly
             try:
-                # Some responses may have rating as string or None
                 rating = float(raw_rating or 0)
             except (ValueError, TypeError):
-                logger.warning("Invalid imdb_rating for '%s': %s. Treating as 0.", name, raw_rating)
+                logger.warning(f"Invalid imdb_rating for '{name}': {raw_rating}. Treating as 0.")
                 rating = 0.0
 
-            # Parse genres (comma separated)
+            # Parse and normalize genres
             if not isinstance(genre_field, str):
-                # skip if genres malformed
-                logger.debug("Skipping item with malformed genre field: %r", genre_field)
+                logger.debug(f"Skipping item with malformed genre field: {genre_field!r}")
                 continue
 
             genre_tokens = [_normalize_genre_token(t)
                             for t in genre_field.split(",") if t.strip() != ""]
 
             if search_token in genre_tokens:
-                logger.debug("Candidate matched: %s (rating=%s)", name, rating)
+                logger.debug(f"Candidate matched: {name} (rating={rating})")
                 if rating > best_rating:
                     best_rating = rating
                     best_name = name or ""
-                    logger.info("New best candidate: %s with rating %s", best_name, best_rating)
+                    logger.info(f"New best candidate: {best_name} with rating {best_rating}")
                 elif rating == best_rating:
-                    # tie-break: alphabetical order (case-insensitive)
-                    # choose the alphabetically lower show name
-                    # To make comparison stable, compare using casefold then fallback to original.
-                    if best_name == "":
+                    if best_name == "" or (name or "").casefold() < best_name.casefold():
+                        logger.info(f"Tie on rating {rating}: "
+                                    f"choosing alphabetically lower name: {name}")
                         best_name = name or ""
-                        logger.info(f"New best candidate (previous empty): {best_name} "
-                                    f"(rating {best_rating})")
-                    else:
-                        # Use casefold for comparison to make it consistent with case-insensitive
-                        if (name or "").casefold() < best_name.casefold():
-                            logger.info(f"Tie on rating {rating}: "
-                                        f"choosing alphabetically "
-                                        f"lower name: {name} over {best_name}")
 
-                            best_name = name or ""
-
-        # Paging logic: stop if we've processed all pages
-        # If total_pages is None or not provided, break when no items returned
+        # Paging logic
         if (total_pages is not None and page >= total_pages) or (total_pages is None and not items):
-            logger.debug("Paging complete: page %d of %s", page, str(total_pages))
+            logger.debug(f"Paging complete: page {page} of {total_pages}")
             break
 
         page += 1
 
-    rating =  best_rating if best_rating != float("-inf") else "N/A"
-    logger.info(f"Processed {processed_items} items. Best found:'{best_name}' with rating {rating}")
+    # --- Final logging using f-string ---
+    rating_info = best_rating if best_rating != float("-inf") else "N/A"
+    logger.info(f"Processed {processed_items} items. "
+                f"Best found: '{best_name}' with rating {rating_info}")
 
-    # If best_name empty, return empty string per decision
     return best_name or ""

@@ -1,27 +1,36 @@
+"""
+Test suite for the Summarizer solution (challenge 04).
+
+Organized in Gherkin style:
+- Given: setup data, article files, environment variables, and mocks
+- When: summarizer functions are called
+- Then: assertions on expected outputs
+"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from challenges.c04_summarizer.summarizer import (
-    format_bullets,
-    load_article,
+    _format_bullets,
+    _load_article,
     summarize,
 )
 
 
 # -----------------------------
-# FIXTURES
+# Fixtures / Private Utilities
 # -----------------------------
 @pytest.fixture
-def fake_article(tmp_path):
-    """Crea un archivo temporal de texto."""
+def _fake_article(tmp_path):
+    """Crea un archivo temporal de texto para pruebas."""
     file = tmp_path / "article.txt"
     file.write_text("Texto de prueba para el resumen.", encoding="utf-8")
     return file
 
 
 @pytest.fixture
-def mock_hf_response():
+def _mock_hf_response():
     """Mock del objeto retornado por HuggingFace."""
     mock_choice = MagicMock()
     mock_choice.message.content = "Resumen generado"
@@ -33,86 +42,104 @@ def mock_hf_response():
 
 
 # -----------------------------
-# TEST: load_article()
+# Tests: load_article()
 # -----------------------------
-def test_load_article_custom(fake_article):
-    """Debe cargar un archivo especificado por el usuario."""
-    result = load_article(str(fake_article))
+def test_load_article_loads_custom_file(_fake_article):
+    """Given a user-provided file, load_article() should return its contents."""
+    # Given
+
+    # When
+    result = _load_article(str(_fake_article))
+
+    # Then
     assert result == "Texto de prueba para el resumen."
 
 
-def test_load_article_default(monkeypatch, fake_article):
-    """Debe cargar el artículo por defecto si no se especifica ruta."""
+def test_load_article_loads_default_file(monkeypatch, _fake_article):
+    """Given no file provided, load_article() should use the default article."""
+    # Given
     monkeypatch.setattr(
         "challenges.c04_summarizer.summarizer.DEFAULT_ARTICLE",
-        fake_article
+        _fake_article
     )
 
-    result = load_article(None)
+    # When
+    result = _load_article(None)
+
+    # Then
     assert result == "Texto de prueba para el resumen."
 
 
-def test_load_article_not_found(tmp_path):
-    """Debe fallar cuando el archivo no existe."""
+def test_load_article_raises_on_missing_file(tmp_path):
+    """Given a non-existent file, load_article() should raise SystemExit."""
+    # Given
     missing = tmp_path / "missing.txt"
+
+    # When / Then
     with pytest.raises(SystemExit):
-        load_article(str(missing))
+        _load_article(str(missing))
 
 
 # -----------------------------
-# TEST: format_bullets()
+# Tests: format_bullets()
 # -----------------------------
-def test_format_bullets():
+def test_format_bullets_removes_prefixes_and_spaces():
+    """Given text with bullets, format_bullets() should clean lines."""
+    # Given
     text = """
     • item uno
     item dos
     """
-    formatted = format_bullets(text)
+
+    # When
+    formatted = _format_bullets(text)
     lines = formatted.split("\n")
 
-    assert lines[0] == "item uno"
-    assert lines[1] == "item dos"
+    # Then
+    assert lines[0] == "- item uno"
+    assert lines[1] == "- item dos"
 
 
 # -----------------------------
-# TEST: summarize()
+# Tests: summarize()
 # -----------------------------
 @patch("challenges.c04_summarizer.summarizer.InferenceClient")
-def test_summarize_ok(mock_client_cls, fake_article, mock_hf_response, monkeypatch):
-    """Prueba completa del flujo de summarize() usando mock HF."""
-    # Mock token obligatorio
+def test_summarize_returns_summary(mock_client_cls, _fake_article, _mock_hf_response, monkeypatch):
+    """Given a valid article and HF token, summarize()
+    should return formatted summary with metrics."""
+    # Given
     monkeypatch.setenv("HF_API_TOKEN", "fake-token")
     monkeypatch.setenv("HF_MODEL", "FakeModel")
-
-    # Mock lectura de archivo
     monkeypatch.setattr(
         "challenges.c04_summarizer.summarizer.DEFAULT_ARTICLE",
-        fake_article
+        _fake_article
     )
 
-    # Mock del cliente HuggingFace
     mock_client = MagicMock()
-    mock_client.chat_completion.return_value = mock_hf_response
+    mock_client.chat_completion.return_value = _mock_hf_response
     mock_client_cls.return_value = mock_client
 
+    # When
     result = summarize(
         text_path=None,
         summary_type="medium"
     )
 
+    # Then
     assert "Resumen generado" in result
     assert "Summary length" in result
 
 
-def test_summarize_missing_token(fake_article, monkeypatch):
-    """Debe fallar si no existe HF_API_TOKEN."""
+def test_summarize_raises_without_token(_fake_article, monkeypatch):
+    """Given no HF_API_TOKEN, summarize() should raise SystemExit."""
+    # Given
     monkeypatch.delenv("HF_API_TOKEN", raising=False)
-
     monkeypatch.setattr(
         "challenges.c04_summarizer.summarizer.DEFAULT_ARTICLE",
-        fake_article
+        _fake_article
     )
 
+    # When / Then
     with pytest.raises(SystemExit):
         summarize(
             text_path=None,

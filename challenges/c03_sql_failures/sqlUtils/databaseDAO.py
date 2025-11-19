@@ -1,3 +1,13 @@
+"""
+Database Data Access Object (DAO) for Challenge 03: SQL Failures Report.
+
+Provides:
+- Directory and path resolution for SQL files and database.
+- SQLite connection handling.
+- Schema and sample data initialization.
+- SQL query execution utilities.
+"""
+
 import os
 import sqlite3
 from pathlib import Path
@@ -10,6 +20,7 @@ logger = get_logger(__name__)
 # ============================================================
 # DIRECTORY & PATH RESOLUTION
 # ============================================================
+
 
 def _base_dir() -> Path:
     """
@@ -26,10 +37,16 @@ def _sql_dir() -> Path:
 
 
 def _schema_sql_path() -> Path:
+    """
+    Returns the path to the schema.sql file.
+    """
     return _sql_dir() / "schema.sql"
 
 
 def _sample_data_sql_path() -> Path:
+    """
+    Returns the path to the sample_data.sql file.
+    """
     return _sql_dir() / "sample_data.sql"
 
 
@@ -37,12 +54,16 @@ def _sample_data_sql_path() -> Path:
 # DB PATH HANDLING
 # ============================================================
 
+
 def load_db_path() -> Path:
     """
-    Loads DB_PATH from .env or uses default
-    ./c03_sql_failures_report/database.sqlite3
+    Loads DB_PATH from environment variable or uses default
+    ./c03_sql_failures_report/database.sqlite3.
 
     Ensures the folder exists.
+
+    Returns:
+        Path: Resolved path to the SQLite database file.
     """
     db_path = os.getenv("DB_PATH")
 
@@ -55,7 +76,6 @@ def load_db_path() -> Path:
 
     db_file = Path(db_path).resolve()
 
-    # Ensure directory exists
     if not db_file.parent.exists():
         logger.info(f"[DB] Creating directory for database: {db_file.parent}")
         db_file.parent.mkdir(parents=True, exist_ok=True)
@@ -68,10 +88,16 @@ def load_db_path() -> Path:
 # CONNECTION HANDLING
 # ============================================================
 
+
 def connect() -> sqlite3.Connection:
     """
-    Creates a SQLite connection using DB_PATH.
-    Ensures directory exists.
+    Creates a SQLite connection using DB_PATH and ensures directory exists.
+
+    Returns:
+        sqlite3.Connection: Active SQLite connection.
+
+    Raises:
+        sqlite3.Error: If connection fails.
     """
     db_file = load_db_path()
 
@@ -81,12 +107,18 @@ def connect() -> sqlite3.Connection:
         logger.info("[DB] Connection established successfully.")
         return conn
 
-    except sqlite3.Error as e:
-        logger.error(f"[DB] Connection failed: {e}")
+    except sqlite3.Error as error:
+        logger.error(f"[DB] Connection failed: {error}")
         raise
 
 
 def test_connection() -> bool:
+    """
+    Tests database connectivity.
+
+    Returns:
+        bool: True if connection works, False otherwise.
+    """
     logger.info("[DB] Testing database connection...")
 
     try:
@@ -97,8 +129,8 @@ def test_connection() -> bool:
         logger.info("[DB] Connection test OK.")
         return True
 
-    except sqlite3.Error as e:
-        logger.error(f"[DB] Connection test FAILED: {e}")
+    except sqlite3.Error as error:
+        logger.error(f"[DB] Connection test FAILED: {error}")
         return False
 
 
@@ -106,9 +138,18 @@ def test_connection() -> bool:
 # SQL EXECUTION UTILITIES
 # ============================================================
 
+
 def _run_sql_file(conn: sqlite3.Connection, sql_path: Path) -> None:
     """
     Executes all SQL statements inside a .sql file.
+
+    Args:
+        conn (sqlite3.Connection): Active database connection.
+        sql_path (Path): Path to SQL file.
+
+    Raises:
+        FileNotFoundError: If SQL file does not exist.
+        sqlite3.Error: If execution fails.
     """
     if not sql_path.exists():
         raise FileNotFoundError(f"SQL file not found: {sql_path}")
@@ -123,8 +164,8 @@ def _run_sql_file(conn: sqlite3.Connection, sql_path: Path) -> None:
         conn.commit()
         logger.info(f"[DB] SQL script executed OK: {sql_path.name}")
 
-    except sqlite3.Error as e:
-        logger.error(f"[DB] SQL execution error in {sql_path.name}: {e}")
+    except sqlite3.Error as error:
+        logger.error(f"[DB] SQL execution error in {sql_path.name}: {error}")
         raise
 
 
@@ -132,17 +173,20 @@ def _run_sql_file(conn: sqlite3.Connection, sql_path: Path) -> None:
 # SCHEMA + DATA LOADING
 # ============================================================
 
+
 def initialize_database_if_needed() -> None:
     """
-    Creates & populates database ONLY IF tables do not exist.
+    Creates and populates database only if tables do not exist.
     """
     conn = connect()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT name FROM sqlite_master
         WHERE type='table' AND name='customers';
-    """)
+        """
+    )
 
     exists = cursor.fetchone()
 
@@ -167,9 +211,20 @@ def initialize_database_if_needed() -> None:
 # QUERY EXECUTION
 # ============================================================
 
+
 def execute_query(query: str, params: Optional[List] = None) -> List[sqlite3.Row]:
     """
     Executes a SELECT query and returns rows.
+
+    Args:
+        query (str): SQL query to execute.
+        params (Optional[List]): Parameters for the query.
+
+    Returns:
+        List[sqlite3.Row]: List of rows returned by the query.
+
+    Raises:
+        sqlite3.Error: If query execution fails.
     """
     if params is None:
         params = []
@@ -183,8 +238,8 @@ def execute_query(query: str, params: Optional[List] = None) -> List[sqlite3.Row
         logger.info(f"[DB] Query completed, {len(rows)} rows returned.")
         return rows
 
-    except sqlite3.Error as e:
-        logger.error(f"[DB] Query error: {e}")
+    except sqlite3.Error as error:
+        logger.error(f"[DB] Query error: {error}")
         raise
 
     finally:
@@ -193,7 +248,17 @@ def execute_query(query: str, params: Optional[List] = None) -> List[sqlite3.Row
 
 def run_applicant_query(query_file_path: str) -> List[sqlite3.Row]:
     """
-    Loads applicant_query.sql and executes it.
+    Loads a SQL file and executes the query.
+
+    Args:
+        query_file_path (str): Path to the SQL file.
+
+    Returns:
+        List[sqlite3.Row]: List of rows returned by the query.
+
+    Raises:
+        FileNotFoundError: If SQL file does not exist.
+        sqlite3.Error: If query execution fails.
     """
     sql_path = Path(query_file_path)
 

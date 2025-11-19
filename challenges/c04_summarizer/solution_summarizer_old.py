@@ -1,5 +1,14 @@
-# solution_summarizer_old.py
+"""
+Legacy CLI for text summarization using manual argument parsing.
+
+Supports:
+- Default article file
+- Summary type: short, medium, bullet
+- Optional model and API token overrides
+"""
+
 import sys
+from typing import Optional, Tuple
 
 from summarizer import summarize
 
@@ -8,64 +17,67 @@ from common.logging_config import get_logger
 logger = get_logger(__name__)
 
 DEFAULT_FILE = "challenges/c04_summarizer/articles/article.txt"
+VALID_TYPES = ["short", "medium", "bullet"]
 
 
-def print_usage():
+def print_usage() -> None:
+    """Prints CLI usage instructions and examples."""
     print(
-        "\nUso:\n"
+        "\nUsage:\n"
         "  python solution_summarizer_old.py <file?> <summary_type> [--model=...] "
         "[--api-token=...]\n\n"
-        "Ejemplos:\n"
+        "Examples:\n"
         "  python solution_summarizer_old.py medium\n"
         "  python solution_summarizer_old.py article.txt medium\n"
         "  python solution_summarizer_old.py bullet --model=facebook/bart-large-cnn\n"
     )
 
 
-def parse_arguments():
-    """Procesamiento manual de argumentos CLI con archivo por defecto."""
+def parse_arguments() -> Tuple[str, str, Optional[str], Optional[str]]:
+    """
+    Manually parses CLI arguments, supports default file and optional parameters.
+
+    Returns:
+        Tuple[str, str, Optional[str], Optional[str]]: (file, summary_type, model, api_token)
+
+    Raises:
+        SystemExit: On invalid arguments or missing required parameters.
+    """
     args = sys.argv[1:]
 
-    if len(args) == 0:
-        logger.error("No se recibió ningún argumento.")
+    if not args:
+        logger.error("No arguments provided.")
         print_usage()
         sys.exit(1)
 
-    # Detectar si primer argumento es tipo o archivo
-    first = args[0]
-    file = None
-    summary_type = None
+    first_arg = args[0]
+    file_path: str
+    summary_type: str
+    params = []
 
-    valid_types = ["short", "medium", "bullet"]
-
-    if first in valid_types:
-        # Caso: user escribió solo el tipo → usar archivo por defecto
-        file = DEFAULT_FILE
-        summary_type = first
+    # Determine if first argument is type or file
+    if first_arg in VALID_TYPES:
+        file_path = DEFAULT_FILE
+        summary_type = first_arg
         params = args[1:]
-
-        logger.info("[OLD CLI] No file provided → using default article.txt")
-
+        logger.info(f"[OLD CLI] No file provided → using default: {file_path}")
     else:
-        # Caso: usuario sí pasó archivo
-        file = first
-
+        file_path = first_arg
         if len(args) < 2:
-            logger.error("No se especificó el tipo de resumen.")
+            logger.error("No summary type specified.")
             print_usage()
             sys.exit(1)
-
         summary_type = args[1]
         params = args[2:]
 
-    if summary_type not in valid_types:
-        logger.error(f"Tipo inválido: {summary_type}")
+    if summary_type not in VALID_TYPES:
+        logger.error(f"Invalid summary type: {summary_type}")
         print_usage()
         sys.exit(1)
 
-    # Parámetros opcionales
-    model = None
-    api_token = None
+    # Parse optional parameters
+    model: Optional[str] = None
+    api_token: Optional[str] = None
 
     for p in params:
         if p.startswith("--model="):
@@ -73,22 +85,23 @@ def parse_arguments():
         elif p.startswith("--api-token="):
             api_token = p.split("=", 1)[1]
         elif p.strip():
-            logger.warning(f"Parámetro desconocido ignorado: {p}")
+            logger.warning(f"Ignoring unknown parameter: {p}")
 
-    return file, summary_type, model, api_token
+    return file_path, summary_type, model, api_token
 
 
-def main():
-    file, summary_type, model, api_token = parse_arguments()
+def main() -> None:
+    """Main function for the legacy CLI."""
+    file_path, summary_type, model, api_token = parse_arguments()
 
-    logger.info(f"[OLD CLI] Archivo: {file}")
-    logger.info(f"[OLD CLI] Tipo: {summary_type}")
+    logger.info(f"[OLD CLI] File: {file_path}")
+    logger.info(f"[OLD CLI] Summary type: {summary_type}")
 
     result = summarize(
-        text_path=file,
+        text_path=file_path,
         summary_type=summary_type,
         cli_model=model,
-        cli_token=api_token
+        cli_token=api_token,
     )
 
     print("\n=== SUMMARY RESULT (OLD API) ===\n")

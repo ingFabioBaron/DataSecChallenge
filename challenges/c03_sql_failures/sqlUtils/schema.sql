@@ -1,9 +1,9 @@
 -- schema.sql
 -- Schema for Challenge 3: Advertising System Failures Report
 
---DROP TABLE IF EXISTS customers;
---DROP TABLE IF EXISTS campaigns;
---DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS campaigns;
+DROP TABLE IF EXISTS events;
 
 -- ============================
 -- Table: customers
