@@ -1,81 +1,87 @@
-Challenge 3: SQL – Advertising System Failures Report
-Objetivo del Desafío
+# Challenge 3 · SQL – Advertising Failures Report
 
-El objetivo de este challenge es escribir una consulta SQL que identifique a los clientes que presentan más de 3 eventos con estado "failure" dentro del sistema de campañas publicitarias.
+## 📋 Resumen del problema
+Escribir una consulta SQL (`applicant_query.sql`) que identifique a los clientes con **más de 3 eventos fallidos** dentro del sistema publicitario.  
+La salida debe contener:
+- `customer`: nombre y apellido concatenados.
+- `failures`: número total de eventos con `status = 'failure'`.
+- Orden descendente por `failures`.
 
-La consulta debe:
+### Modelo de datos
+| Tabla      | Campos relevantes                                  |
+|------------|-----------------------------------------------------|
+| `customers`| `id`, `first_name`, `last_name`                     |
+| `campaigns`| `id`, `customer_id`, `name`                         |
+| `events`   | `dt`, `campaign_id`, `status ∈ {success, failure}`  |
 
-Contar la cantidad total de fallos por cliente (sumando fallos en todas sus campañas).
+Las relaciones siguen la cadena `customers → campaigns → events`.
 
-Incluir únicamente a los clientes con más de 3 fallos.
+## 🧠 Estrategia de la consulta
+```sql
+SELECT
+    first_name || ' ' || last_name AS customer,
+    COUNT(*) AS failures
+FROM customers
+JOIN campaigns ON campaigns.customer_id = customers.id
+JOIN events ON events.campaign_id = campaigns.id
+WHERE events.status = 'failure'
+GROUP BY customers.id
+HAVING COUNT(*) > 3
+ORDER BY failures DESC;
+```
 
-Listar dos columnas:
-customer (nombre completo del cliente)
-failures (cantidad de fallos)
+Puntos clave:
+- Se usa `JOIN` explícito para garantizar consistencia referencial.
+- El `WHERE` filtra sólo fallos antes del `GROUP BY`.
+- `HAVING COUNT(*) > 3` aplica el umbral pedido.
+- `COUNT(*)` es seguro porque los `JOIN` ya restringen a eventos fallidos.
 
-Ordenar el resultado por el número de fallos en orden descendente.
+## 🗂️ Organización
+- `applicant_query.sql`: query entregable.
+- `sqlUtils/databaseDAO.py`: inicialización de SQLite, lectura de `.sql` y helpers para pruebas/CLI.
+- `sqlUtils/schema.sql` y `sample_data.sql`: crean y cargan datos de ejemplo.
+- `run.py`: ejecuta la consulta contra la base local y registra los resultados.
+- `tests/test_databaseDAO.py`: valida E2E que la query arroje los clientes esperados.
 
-Ser entregada en un archivo llamado applicant_query.sql.
+## ⚙️ Variables de entorno
+- `DB_PATH` (opcional): ruta al archivo SQLite. Si no existe, se crea en `challenges/c03_sql_failures/database.sqlite3`.
 
-Solución Implementada
+## ▶️ Ejecución
+Desde la raíz del repo:
 
-Enfoque Algorítmico
-La lógica SQL aplicada es la siguiente:
-
-Se unen las tablas customers, campaigns y events a través de sus claves foráneas para relacionar cada evento con su cliente correspondiente.
-
-Se filtran únicamente los eventos con status = 'failure'.
-
-Se agrupan los registros por cliente para obtener la cantidad total de fallos.
-
-Se aplica un filtro HAVING para conservar solo los clientes con más de 3 fallos.
-
-Se ordena el resultado en orden descendente de fallos.
-
-Se genera una columna customer que combina first_name y last_name.
-
-Este enfoque garantiza que todos los fallos en todas las campañas del cliente sean sumados correctamente.
-
-Estructura del Código
-Los archivos relevantes del challenge son:
-
-challenges/c03_sql_failures/sqlUtils/applicant_query.sql
-Contiene la consulta SQL solicitada por el challenge.
-
-challenges/c03_sql_failures/tests/test_databaseDAO.py
-Pruebas en Python que crean una base de datos SQLite temporal, cargan los datos de ejemplo y ejecutan la consulta para validar su correcto funcionamiento.
-
-challenges/c03_sql_failures/sqlUtils/databaseDAO.py
-Código auxiliar que ejecuta la consulta SQL y expone los resultados para las pruebas unitarias.
-
-challenges/c03_sql_failures/run.py
-Script que ejecuta la misma consulta contra la base de datos incluida en el proyecto y muestra los resultados por consola.
-
-Instrucciones de Ejecución
-
-Ubicarse en la raíz del proyecto.
-
-Opción A: usando make
+**Con Make**
+```bash
 make run-ch3
+```
 
-Opción B: usando Poetry
+**Con Poetry**
+```bash
 poetry run python challenges/c03_sql_failures/run.py
+```
+El script:
+1. Verifica la conexión (`test_connection`).
+2. Inicializa la DB si aún no existen tablas (carga schema + sample data).
+3. Ejecuta `applicant_query.sql` y loguea cada fila.
 
-Ejemplo de Entrada y Salida
-
-Los datos de entrada provienen de las tablas customers, campaigns y events.
-
-Ejemplo de salida esperada usando los datos del PDF:
-
-customer
-Whitney Ferrero
-failures
-6
-
-Pruebas Unitarias
-
-Las pruebas están en:
-challenges/c03_sql_failures/tests/test_databaseDAO.py
-
-Para ejecutarlas:
+## 🧪 Pruebas unitarias
+```bash
 poetry run pytest challenges/c03_sql_failures/
+```
+Cobertura:
+- Creación on-demand de la base con datos de ejemplo.
+- Ejecución de la consulta y comparación contra resultados esperados.
+- Manejo de rutas inexistentes o SQL inválido (errores controlados).
+
+## 🧾 Ejemplo de resultado
+Con los datos provistos, el resultado parcial luce así:
+```
+customer          | failures
+--------------------------------
+Whitney Ferrero   | 6
+Jonathan Darnell  | 4
+```
+
+## 🚧 Edge cases contemplados
+- Base sin inicializar: el DAO crea estructura y datos automáticamente.
+- `DB_PATH` apuntando a carpetas que no existen: se crean de forma recursiva.
+- Datos faltantes o campañas sin eventos → no aparecen en el resultado (count = 0).

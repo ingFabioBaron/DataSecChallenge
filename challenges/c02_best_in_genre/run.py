@@ -15,12 +15,12 @@ if __name__ == "__main__":
     logger.info("[CH02] Manual execution of bestInGenre()")
 
     # Genre to test
-    genre = "Action"
+    genre = "Thriller"
 
     try:
         # Find the best TV series for the given genre
         result = bestInGenre(genre)
-        print(f"\nBest TV series in genre '{genre}': {result}\n")
+        logger.info(f"\nBest TV series in genre '{genre}': {result}\n")
 
     except Exception as error:
         logger.error(f"Execution error: {error}")

@@ -1,89 +1,90 @@
-Challenge 4: Go CLI – Text Summarizer with GenAI
-Nota Importante
+# Challenge 4 · CLI Summarizer con GenAI (versión Python)
 
-Aunque el enunciado original del challenge solicitaba implementar este CLI en el lenguaje Go, en este proyecto la solución fue implementada utilizando Python, manteniendo todas las funcionalidades, requisitos y comportamiento esperados.
-La razón es demostrar un enfoque más consistente con el stack principal del repositorio y asegurar integración homogénea con las herramientas ya configuradas (Poetry, estructura de carpetas y pruebas automáticas).
+> El enunciado original pedía implementarlo en Go; en este repositorio se resolvió en **Python + Click** para mantener coherencia con el stack del resto de los desafíos.  
+> Las funcionalidades, parámetros y comportamiento se respetan 1:1 respecto del requerimiento oficial.
 
-El comportamiento, parámetros, lógica del CLI y comunicación con la API siguen exactamente las especificaciones del requirement oficial.
+## 📋 Resumen del problema
+Construir un CLI que:
+- Lea un archivo de texto plano.
+- Permita elegir el tipo de resumen (`short`, `medium`, `bullet`).
+- Forme un prompt acorde y consuma un modelo de Hugging Face vía API pública.
+- Muestre el resumen junto con métricas de reducción.
+- Maneje errores de entrada, credenciales y red.
 
-Objetivo del Desafío
+## 🔐 Requisitos previos
+| Variable | Obligatoria | Descripción |
+|----------|-------------|-------------|
+| `HF_API_TOKEN` | Sí | Token de Hugging Face para usar la API de inferencia. |
+| `HF_MODEL` | No | Modelo alternativo; por defecto `Qwen/Qwen2.5-7B-Instruct`. |
 
-Crear una aplicación de línea de comandos que genere el resumen de un archivo de texto usando un endpoint público de IA generativa.
+El archivo `challenges/c04_summarizer/articles/article.txt` se usa como entrada por defecto cuando no se especifica otro.  
+El requerimiento oficial pide enlazar la documentación del endpoint genAI utilizado; el código (`summarizer.py`) referencia explícitamente el modelo `Qwen/Qwen2.5-7B-Instruct` y su ficha técnica en Hugging Face: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct.
 
-La aplicación debe:
+## 🧠 Estrategia de la solución
+1. **CLI con Click** (`solution_summarizer.py`):
+   - Comando `summarize` con opciones `--input/-i`, `--type/-t`, `--model/-m`, `--api-token`.
+   - Logging integrado (`common.logging_config`) para trazar parámetros y resultados.
+2. **Módulo `summarizer.py`**:
+   - Carga del texto (`_load_article`) resolviendo rutas relativas/absolutas.
+   - Validación del token y modelo.
+   - Cliente `huggingface_hub.InferenceClient` en modo chat-completion.
+   - Prompts específicos por tipo de resumen (short, medium, bullet).
+   - Post-procesamiento para bullets y cálculo de métricas (largo original vs resumen).
+3. **Manejo de errores**:
+   - Falta de archivo → `SystemExit(1)` con mensaje claro.
+   - Token ausente o request fallida → salida controlada, logs con detalles.
 
-Aceptar parámetros para archivo de entrada y tipo de resumen (short, medium, bullet).
+Complejidad dominada por la llamada al modelo remoto; el resto del flujo es `O(n)` respecto a la longitud del texto.
 
-Construir un prompt adecuado para el tipo de resumen solicitado.
+## 🗂️ Organización
+- `solution_summarizer.py`: CLI y parsing de flags.
+- `summarizer.py`: lógica de negocio, prompts y formateo.
+- `solution_summarizer_old.py`: versión previa conservada como referencia.
+- `articles/article.txt`: entrada por defecto.
+- `tests/test_summarizer.py`: fixtures de texto y mocks de la API.
+- `run.py`: wrapper que ejecuta el comando con parámetros de ejemplo.
 
-Llamar un endpoint público de IA para generar el resumen.
+## ▶️ Ejecución
+Desde la raíz del repo:
 
-Mostrar el resultado por consola.
+```bash
+poetry run python challenges/c04_summarizer/solution_summarizer.py summarize \
+  --type bullet \
+  --input challenges/c04_summarizer/articles/article.txt
+```
 
-Manejar errores de archivo, red y API.
+Atajos posibles:
+```bash
+poetry run python challenges/c04_summarizer/solution_summarizer.py summarize -t short
+```
+Si no se entrega `--input`, se usa el archivo por defecto.
 
-Entregar el código en un archivo equivalente al solicitado en el enunciado, pero implementado en Python.
-
-Solución Implementada
-
-Enfoque Algorítmico
-El CLI implementado en Python realiza lo siguiente:
-
-Procesamiento de argumentos:
-Se valida el archivo de entrada, el tipo solicitado y el formato correcto de la llamada.
-
-Lectura del archivo:
-Se obtiene el texto original y se prepara la instrucción para la IA.
-
-Construcción del prompt:
-short: generar 1 a 2 oraciones.
-medium: producir un párrafo.
-bullet: generar puntos clave en formato lista.
-
-Llamada a la API:
-Se usa requests para enviar la solicitud POST al endpoint seleccionado de IA pública.
-Se manejan errores como fallos de conexión, respuestas inválidas y límites de API.
-
-Estructura del Código
-Los archivos del challenge son:
-
-challenges/c04_summarizer/solution_summarizer.py
-Implementación completa del CLI en Python, manteniendo el diseño y flujo esperados en el enunciado.
-
-challenges/c04_summarizer/run.py
-Script auxiliar para ejecutar el CLI desde la raíz del proyecto.
-
-challenges/c04_summarizer/tests/
-Pruebas que validan comportamiento básico del CLI.
-
-Instrucciones de Ejecución
-
-Opción A: usando Poetry
-poetry run python challenges/c04_summarizer/solution_summarizer.py --input ruta/archivo.txt --type bullet
-
-Opción B: versión abreviada
-poetry run python challenges/c04_summarizer/solution_summarizer.py -t short archivo.txt
-
-Ejemplo de Entrada y Salida
-
-Entrada:
-Un archivo article.txt con texto extenso.
-
-Ejemplo tipo bullet:
-
-Punto destacado 1
-
-Punto destacado 2
-
-Punto destacado 3
-
-Ejemplo tipo short:
-Este artículo presenta los conceptos principales del tema y una conclusión breve.
-
-Pruebas Unitarias
-
-Si existen pruebas automatizadas para este challenge se encuentran en:
-challenges/c04_summarizer/tests/
-
-Para ejecutarlas:
+## 🧪 Pruebas unitarias
+```bash
 poetry run pytest challenges/c04_summarizer/
+```
+Escenarios cubiertos:
+- Rutas válidas e inválidas de archivos.
+- Selección de tipo `short/medium/bullet`.
+- Validación del token.
+- Formateo de bullets y cálculo de métricas.
+
+## 🧾 Ejemplo de salida (modo bullet)
+```
+=== SUMMARY RESULT ===
+
+- Punto destacado 1
+- Punto destacado 2
+- Punto destacado 3
+
+--- SUMMARY METRICS ---
+Type           : bullet
+Original length: 5421 chars
+Summary length : 312 chars
+Reduced        : 94%
+```
+
+## 🚧 Edge cases contemplados
+- Archivos inexistentes o sin permisos → error claro y salida temprana.
+- Tokens inválidos / rate limits → mensaje del API y código de salida `1`.
+- Resumen vacío → se muestra igualmente junto a métricas (0 chars).

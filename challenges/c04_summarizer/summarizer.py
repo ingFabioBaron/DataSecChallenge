@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_ARTICLE = BASE_DIR / "articles" / "article.txt"
 DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+# API docs requirement: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct
 
 
 def _load_article(path: Optional[str]) -> str:
@@ -110,7 +111,8 @@ def summarize(
     # Load text
     text = _load_article(text_path)
 
-    # Create Hugging Face client
+    # Create Hugging Face client (requirement: include API docs link)
+    # Docs: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct
     client = InferenceClient(token=token)
 
     # System prompts

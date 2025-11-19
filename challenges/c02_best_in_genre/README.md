@@ -1,87 +1,75 @@
-Challenge 2: REST API – Best TV Shows in Genre
-Objetivo del Desafío
+# Challenge 2 · REST API – Best TV Show per Genre
 
-El objetivo de este challenge es consultar una API pública y determinar cuál es la serie de televisión con mejor calificación en un género específico.
+## 📋 Resumen del problema
+Consumir la API pública paginada `https://jsonmock.hackerrank.com/api/tvseries` y responder con **el nombre de la serie con mejor `imdb_rating` para un género dado**.  
+Requisitos principales:
+- Entrada: `genre` como texto (p. ej. `"Action"`).
+- Comparar todas las páginas de la API (no basta con la primera).
+- Coincidencia de género **case-insensitive** y tolerante a espacios.
+- En caso de empate en rating, devolver el nombre alfabéticamente menor.
+- Firma requerida: `def bestInGenre(genre: str) -> str`.
 
-La función debe:
+## 🔍 Consideraciones funcionales
+- Se valida que `genre` sea `str` y no esté vacío → errores explícitos (`TypeError`, `ValueError`).
+- Se toleran datos incompletos de la API (ratings vacíos o géneros mal formados).
+- Cualquier error de red/HTTP se loguea y retorna `""` para evitar fallas silenciosas.
+- Tiempo de espera configurado en `REQUEST_TIMEOUT = 5s` para cada request.
 
-Recibir un parámetro genre como texto (por ejemplo: "Action", "Comedy", "Drama").
+## 🧠 Estrategia de solución
+1. **Descubrimiento de paginación**: la primera respuesta informa `total_pages`; se itera hasta cubrirlas todas.
+2. **Normalización de datos**:
+   - `genre` → `casefold()` + `strip()` para comparaciones consistentes.
+   - Campo `genre` de la API dividido por comas y tokens normalizados con `_normalize_genre_token`.
+3. **Selección del candidato**:
+   - Se convierte cada `imdb_rating` a `float`. Valores inválidos se tratan como `0`.
+   - Se actualiza `best_rating` y `best_name` sólo cuando se supera el rating o se resuelve un empate lexicográfico.
+4. **Trazabilidad**: el módulo usa `common.logging_config` para registrar requests, coincidencias y métricas finales.
 
-Realizar múltiples solicitudes HTTP GET a la API paginada:
-https://jsonmock.hackerrank.com/api/tvseries
+Complejidad temporal: `O(p * r)` con `p` páginas y `r` registros por página.  
+Espacial: `O(1)` fuera del buffer de respuesta (se procesa streaming de páginas).
 
-Analizar todas las páginas para obtener la totalidad de las series.
+## 🗂️ Organización
+- `solution_best_in_genre.py`: función principal, validaciones y utilidades de networking.
+- `run.py`: permite solicitar el género por consola y mostrar la respuesta.
+- `tests/test_best_in_genre.py`: mocks de la API y casos de prueba (éxito, empates, errores de red, inputs inválidos).
 
-Filtrar únicamente las series cuyo campo genre contenga el género dado, sin importar mayúsculas o minúsculas.
+## ▶️ Ejecución
+Desde la raíz del repo:
 
-Comparar las series filtradas por su valor imdb_rating.
-
-En caso de empate, retornar el nombre alfabéticamente menor.
-
-Retornar únicamente el nombre de la serie como texto.
-
-Debe implementarse exactamente la función:
-def bestInGenre(genre: str) -> str
-
-Solución Implementada
-
-Enfoque Algorítmico
-La solución realiza lo siguiente:
-
-Se envía la primera solicitud HTTP GET para obtener la información inicial y determinar cuántas páginas tiene la API.
-
-Se recorren todas las páginas con solicitudes completas usando el parámetro page.
-
-Se convierten los géneros de cada serie en una lista, separando por coma y normalizando mayúsculas/minúsculas.
-
-Se seleccionan únicamente las series que incluyen el género indicado.
-
-Se identifica la serie con el mayor imdb_rating.
-
-Si dos o más series tienen el mismo rating, se aplica un desempate lexicográfico comparando los nombres.
-
-Finalmente, se retorna únicamente el nombre de la mejor serie del género.
-
-Este enfoque asegura la cobertura completa de la API, un filtrado correcto y una comparación precisa según las reglas de negocio.
-
-Estructura del Código
-Los archivos están organizados así:
-
-challenges/c02_best_in_genre/solution_best_in_genre.py
-Contiene la función bestInGenre con toda la lógica de consultas, filtrado y selección.
-
-challenges/c02_best_in_genre/run.py
-Script ejecutable que permite probar la función solicitando un género y mostrando la serie resultante.
-
-challenges/c02_best_in_genre/tests/test_best_in_genre.py
-Pruebas unitarias diseñadas para verificar que la función maneje correctamente géneros simples, múltiples géneros por serie, empates y comportamiento general.
-
-Instrucciones de Ejecución
-
-Ubicarse en la raíz del proyecto.
-
-Opción A: usando make
+**Con Make**
+```bash
 make run-ch2
+```
 
-Opción B: usando Poetry
+**Con Poetry puro**
+```bash
 poetry run python challenges/c02_best_in_genre/run.py
+```
 
-Ejemplo de Entrada y Salida
-
-Input:
-Action
-
-Output esperado:
-Game of Thrones
-
-Explicación:
-Entre todas las series del género Action, "Game of Thrones" posee la calificación más alta (9.3).
-En el archivo PDF del challenge se listan también otras series de referencia, pero ninguna supera esa puntuación.
-
-Pruebas Unitarias
-
-Las pruebas de este challenge están en:
-challenges/c02_best_in_genre/tests/test_best_in_genre.py
-
-Para ejecutarlas:
+## 🧪 Pruebas unitarias
+```bash
 poetry run pytest challenges/c02_best_in_genre/
+```
+Cobertura relevante:
+- Géneros simples y mezclas (`"Action, Drama"`).
+- Empates de rating y resolución lexicográfica.
+- Manejo de `RequestException` o JSON inválido.
+- Validaciones de entrada.
+
+## 🧾 Ejemplo de uso
+Entrada:
+```
+Action
+```
+
+Salida esperada:
+```
+Game of Thrones
+```
+Porque es la serie de acción con rating 9.3, superior al resto, según los datos mock de HackerRank.
+
+## 🚧 Edge cases considerados
+- Género con espacios extra (`"  drama  "`).
+- Página sin datos (API parcial) → se continúa sin fallar.
+- Campos `genre` no string → se ignoran.
+- API que retorna 0 páginas → resultado vacío.
