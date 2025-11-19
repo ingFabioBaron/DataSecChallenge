@@ -1,5 +1,3 @@
-# challenges/c02_best_in_genre/run.py
-
 from common.logging_config import get_logger
 from challenges.c02_best_in_genre.solution_best_in_genre import bestInGenre
 

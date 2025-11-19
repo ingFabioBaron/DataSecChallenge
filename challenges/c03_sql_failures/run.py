@@ -1,13 +1,10 @@
 import sqlite3
 from pathlib import Path
 from common.logging_config import get_logger
+from dotenv import load_dotenv
+from challenges.c03_sql_failures.sqlUtils.databaseDAO import (test_connection,initialize_database_if_needed,run_applicant_query,)
 
-from challenges.c03_sql_failures.sqlUtils.databaseDAO import (
-    test_connection,
-    initialize_database_if_needed,
-    run_applicant_query,
-)
-
+load_dotenv()
 logger = get_logger(__name__)
 
 # --- CONSTANTS ---

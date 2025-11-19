@@ -1,0 +1,72 @@
+name: DataSecChallenge CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # ----------------------------------------
+      # Checkout the repository
+      # ----------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ----------------------------------------
+      # Install Python
+      # ----------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ----------------------------------------
+      # Cache Poetry Dependencies
+      # ----------------------------------------
+      - name: Cache Poetry virtual environment
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      # ----------------------------------------
+      # Install Poetry
+      # ----------------------------------------
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: '1.8.3'
+
+      # ----------------------------------------
+      # Install dependencies
+      # ----------------------------------------
+      - name: Install dependencies
+        run: poetry install
+
+      # ----------------------------------------
+      # Copy .env.example → .env (for tests)
+      # ----------------------------------------
+      - name: Create default .env
+        run: |
+          cp .env.example .env
+          echo "HF_API_TOKEN=dummy_for_tests" >> .env
+
+      # ----------------------------------------
+      # Run linters
+      # ----------------------------------------
+      - name: Run RUFF linter
+        run: poetry run ruff check .
+
+      # ----------------------------------------
+      # Run tests
+      # ----------------------------------------
+      - name: Run test suite
+        run: make test

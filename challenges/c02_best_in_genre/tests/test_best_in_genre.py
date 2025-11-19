@@ -1,7 +1,6 @@
 import responses
 from challenges.c02_best_in_genre.solution_best_in_genre import bestInGenre, BASE_URL
 
-# Utility: build a page payload
 def make_page_payload(page: int, total_pages: int, items: list):
     return {
         "page": page,

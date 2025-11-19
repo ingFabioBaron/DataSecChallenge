@@ -1,5 +1,3 @@
-# challenges/c01_minesweeper/run.py
-
 from common.logging_config import get_logger
 from challenges.c01_minesweeper.solution_minesweeper import count_neighbouring_mines
 
