@@ -1,5 +1,6 @@
 import requests
 from requests.exceptions import RequestException
+
 from common.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -102,7 +103,8 @@ def bestInGenre(genre: str) -> str:
                 logger.debug("Skipping item with malformed genre field: %r", genre_field)
                 continue
 
-            genre_tokens = [_normalize_genre_token(t) for t in genre_field.split(",") if t.strip() != ""]
+            genre_tokens = [_normalize_genre_token(t)
+                            for t in genre_field.split(",") if t.strip() != ""]
 
             if search_token in genre_tokens:
                 logger.debug("Candidate matched: %s (rating=%s)", name, rating)
@@ -116,11 +118,15 @@ def bestInGenre(genre: str) -> str:
                     # To make comparison stable, compare using casefold then fallback to original.
                     if best_name == "":
                         best_name = name or ""
-                        logger.info("New best candidate (previous empty): %s (rating %s)", best_name, best_rating)
+                        logger.info(f"New best candidate (previous empty): {best_name} "
+                                    f"(rating {best_rating})")
                     else:
-                        # Use casefold for comparison to make it consistent with case-insensitive rules
+                        # Use casefold for comparison to make it consistent with case-insensitive
                         if (name or "").casefold() < best_name.casefold():
-                            logger.info("Tie on rating %s: choosing alphabetically lower name: %s over %s", rating, name, best_name)
+                            logger.info(f"Tie on rating {rating}: "
+                                        f"choosing alphabetically "
+                                        f"lower name: {name} over {best_name}")
+
                             best_name = name or ""
 
         # Paging logic: stop if we've processed all pages
@@ -131,7 +137,8 @@ def bestInGenre(genre: str) -> str:
 
         page += 1
 
-    logger.info("Processed %d items. Best found: '%s' with rating %s", processed_items, best_name, best_rating if best_rating != float("-inf") else "N/A")
+    rating =  best_rating if best_rating != float("-inf") else "N/A"
+    logger.info(f"Processed {processed_items} items. Best found:'{best_name}' with rating {rating}")
 
     # If best_name empty, return empty string per decision
     return best_name or ""

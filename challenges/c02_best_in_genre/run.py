@@ -1,5 +1,5 @@
-from common.logging_config import get_logger
 from challenges.c02_best_in_genre.solution_best_in_genre import bestInGenre
+from common.logging_config import get_logger
 
 logger = get_logger(__name__)
 

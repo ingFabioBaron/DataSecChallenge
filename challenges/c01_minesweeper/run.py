@@ -1,5 +1,5 @@
-from common.logging_config import get_logger
 from challenges.c01_minesweeper.solution_minesweeper import count_neighbouring_mines
+from common.logging_config import get_logger
 
 logger = get_logger(__name__)
 

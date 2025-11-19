@@ -1,10 +1,11 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from challenges.c04_summarizer.summarizer import (
-    summarize,
-    load_article,
     format_bullets,
+    load_article,
+    summarize,
 )
 
 

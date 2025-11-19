@@ -1,8 +1,9 @@
 # solution_summarizer_old.py
 import sys
-import os
-from common.logging_config import get_logger
+
 from summarizer import summarize
+
+from common.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -12,7 +13,8 @@ DEFAULT_FILE = "challenges/c04_summarizer/articles/article.txt"
 def print_usage():
     print(
         "\nUso:\n"
-        "  python solution_summarizer_old.py <file?> <summary_type> [--model=...] [--api-token=...]\n\n"
+        "  python solution_summarizer_old.py <file?> <summary_type> [--model=...] "
+        "[--api-token=...]\n\n"
         "Ejemplos:\n"
         "  python solution_summarizer_old.py medium\n"
         "  python solution_summarizer_old.py article.txt medium\n"

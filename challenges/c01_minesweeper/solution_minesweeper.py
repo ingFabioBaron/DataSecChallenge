@@ -122,7 +122,8 @@ def _validate_input(board: list) -> None:
         for j, val in enumerate(row):
             # Check if values are restricted to 0 or 1
             if val not in (INPUT_EMPTY_SPACE, INPUT_MINE_INDICATOR):
-                raise ValueError(f"Board values must be {INPUT_EMPTY_SPACE}] or {INPUT_MINE_INDICATOR}. "
+                raise ValueError(f"Board values must be {INPUT_EMPTY_SPACE}] "
+                                 f"or {INPUT_MINE_INDICATOR}. "
                                  f"Found {val} at ({i},{j})")
 
     # if no error then return...

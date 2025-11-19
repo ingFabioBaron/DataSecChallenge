@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from common.logging_config import get_logger
 from challenges.c03_sql_failures.sqlUtils import databaseDAO
+from common.logging_config import get_logger
 
 logger = get_logger(__name__)
 

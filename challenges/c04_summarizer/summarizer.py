@@ -1,8 +1,10 @@
 import os
 from pathlib import Path
-from huggingface_hub import InferenceClient
-from common.logging_config import get_logger
+
 from dotenv import load_dotenv
+from huggingface_hub import InferenceClient
+
+from common.logging_config import get_logger
 
 load_dotenv()
 logger = get_logger(__name__)

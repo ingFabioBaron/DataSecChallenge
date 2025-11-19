@@ -1,5 +1,6 @@
 import click
 from summarizer import summarize
+
 from common.logging_config import get_logger
 
 logger = get_logger(__name__)

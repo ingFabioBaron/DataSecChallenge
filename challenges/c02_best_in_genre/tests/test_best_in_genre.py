@@ -1,5 +1,7 @@
 import responses
-from challenges.c02_best_in_genre.solution_best_in_genre import bestInGenre, BASE_URL
+
+from challenges.c02_best_in_genre.solution_best_in_genre import BASE_URL, bestInGenre
+
 
 def make_page_payload(page: int, total_pages: int, items: list):
     return {
@@ -15,12 +17,17 @@ def make_page_payload(page: int, total_pages: int, items: list):
 def test_basic_action_example():
     # Build two pages; only some items contain 'Action'
     page1_items = [
-        {"name": "Game of Thrones", "genre": "Action, Adventure, Drama", "imdb_rating": 9.3},
-        {"name": "Avatar: The Last Airbender", "genre": "Action, Animation, Adventure", "imdb_rating": 9.2},
+        {"name": "Game of Thrones",
+         "genre": "Action, Adventure, Drama", "imdb_rating": 9.3},
+
+        {"name": "Avatar: The Last Airbender",
+         "genre": "Action, Animation, Adventure", "imdb_rating": 9.2},
     ]
     page2_items = [
-        {"name": "Hagane no renkinjutsushi", "genre": "Action, Fantasy", "imdb_rating": 9.1},
-        {"name": "Shingeki no kyojin", "genre": "Action, Drama", "imdb_rating": 8.9},
+        {"name": "Hagane no renkinjutsushi",
+         "genre": "Action, Fantasy", "imdb_rating": 9.1},
+        {"name": "Shingeki no kyojin",
+         "genre": "Action, Drama", "imdb_rating": 8.9},
     ]
 
     responses.add(
