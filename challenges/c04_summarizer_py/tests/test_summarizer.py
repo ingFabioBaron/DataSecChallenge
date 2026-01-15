@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from challenges.c04_summarizer.summarizer import (
+from challenges.c04_summarizer_py.summarizer import (
     _format_bullets,
     _load_article,
     summarize,
@@ -59,7 +59,7 @@ def test_load_article_loads_default_file(monkeypatch, _fake_article):
     """Given no file provided, load_article() should use the default article."""
     # Given
     monkeypatch.setattr(
-        "challenges.c04_summarizer.summarizer.DEFAULT_ARTICLE",
+        "challenges.c04_summarizer_py.summarizer.DEFAULT_ARTICLE",
         _fake_article
     )
 
@@ -103,7 +103,7 @@ def test_format_bullets_removes_prefixes_and_spaces():
 # -----------------------------
 # Tests: summarize()
 # -----------------------------
-@patch("challenges.c04_summarizer.summarizer.InferenceClient")
+@patch("challenges.c04_summarizer_py.summarizer.InferenceClient")
 def test_summarize_returns_summary(mock_client_cls, _fake_article, _mock_hf_response, monkeypatch):
     """Given a valid article and HF token, summarize()
     should return formatted summary with metrics."""
@@ -111,7 +111,7 @@ def test_summarize_returns_summary(mock_client_cls, _fake_article, _mock_hf_resp
     monkeypatch.setenv("HF_API_TOKEN", "fake-token")
     monkeypatch.setenv("HF_MODEL", "FakeModel")
     monkeypatch.setattr(
-        "challenges.c04_summarizer.summarizer.DEFAULT_ARTICLE",
+        "challenges.c04_summarizer_py.summarizer.DEFAULT_ARTICLE",
         _fake_article
     )
 
@@ -135,7 +135,7 @@ def test_summarize_raises_without_token(_fake_article, monkeypatch):
     # Given
     monkeypatch.delenv("HF_API_TOKEN", raising=False)
     monkeypatch.setattr(
-        "challenges.c04_summarizer.summarizer.DEFAULT_ARTICLE",
+        "challenges.c04_summarizer_py.summarizer.DEFAULT_ARTICLE",
         _fake_article
     )
 

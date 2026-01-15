@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 # --- CONSTANTS ---
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_ARTICLE = BASE_DIR / "articles" / "article.txt"
-DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct:together"
 # API docs requirement: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct
 
 
