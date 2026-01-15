@@ -84,3 +84,10 @@ $RECYC
 # SISTEMA OPERATIVO
 # =======================
 database.sqlite3
+
+# =======================
+# Go binaries
+# =======================
+bin/
+*.exe
+*.test

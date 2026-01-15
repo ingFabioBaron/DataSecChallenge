@@ -10,8 +10,7 @@ import (
 	"path/filepath" // ESENCIAL: Necesario para la resolución de rutas en el futuro
 	"strings"
 	"time" // Añadir time para el timeout del HTTP client
-
-	"github.com/joho/godotenv" // Importar godotenv
+	// Importar godotenv
 )
 
 // Default model to use if not overridden
@@ -62,16 +61,9 @@ func SummarizeText(
 	httpClient *http.Client, // Add this parameter
 ) (string, error) {
 	// Cargar variables de entorno desde .env en la raíz del proyecto
-	err := godotenv.Load("../../.env")     // <-- RUTA ACTUALIZADA
-	if err != nil && !os.IsNotExist(err) { // Solo si el error no es que el archivo no existe
-		fmt.Printf("Error loading .env file: %v\n", err)
-	}
 
 	// --- Token validation ---
 	token := cliToken
-	if token == "" {
-		token = os.Getenv("HF_API_TOKEN")
-	}
 	if token == "" {
 		return "", fmt.Errorf(
 			"\n❌ ERROR: No HF_API_TOKEN detected.\n\n" +
@@ -146,18 +138,19 @@ func SummarizeText(
 	}
 	defer resp.Body.Close()
 
-	var bodyBytes []byte // Declara bodyBytes aquí
+	// 1. LEER UNA SOLA VEZ
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// 2. VALIDAR STATUS (Usando los bytes ya leídos)
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ = io.ReadAll(resp.Body)
-		return "", fmt.Errorf("API returned non-OK status: %d - %s", resp.StatusCode, string(bodyBytes))
+		return "", fmt.Errorf("API error (%d): %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	// --- Parse API Response ---
 	var apiResponse map[string]interface{} // La respuesta de OpenAI es un objeto, no un array
-	bodyBytes, err = io.ReadAll(resp.Body) // Asigna aquí sin :=
-	if err != nil {
-		return "", fmt.Errorf("failed to read API response body: %w", err)
-	}
 	err = json.Unmarshal(bodyBytes, &apiResponse)
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal API response: %w", err)

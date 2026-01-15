@@ -7,9 +7,13 @@ import (
 	"DataSecChallenge/challenges/c04_summarizer/summarizer" // Import our summarizer package
 
 	"github.com/spf13/cobra"
+
+	"github.com/joho/godotenv" // Importar godotenv
 )
 
 // GoLang version used: 1.25.5
+
+const envFile = ".env"
 
 var (
 	inputFile   string
@@ -58,15 +62,20 @@ Document the Go version used in your code comments.`,
 			os.Exit(1)
 		}
 
+		finalToken := apiToken
+		if finalToken == "" {
+			finalToken = os.Getenv("HF_API_TOKEN")
+		}
+
 		// Perform summarization
-		summaryResult, err := summarizer.SummarizeText(articleContent, summaryType, model, apiToken, nil)
+		summaryResult, err := summarizer.SummarizeText(articleContent, summaryType, model, finalToken, nil)
 		if err != nil {
 			fmt.Printf("Error during summarization: %v\n", err)
 			os.Exit(1)
 		}
 
 		// Output result
-		fmt.Println("\n=== SUMMARY RESULT ===\n")
+		fmt.Println("\n=== SUMMARY RESULT ===")
 		fmt.Println(summaryResult)
 	},
 }
@@ -79,6 +88,28 @@ func init() {
 }
 
 func main() {
+	/* Como este programa es un CLI, se ejecuta desde el directorio raiz
+	 * del proyecto, se carga el archivo .env desde el directorio raiz.
+	 * este es el valor si se corre desde dentro del directorio "c04-summarizer"
+	 *antes _ = godotenv.Load("../../.env")
+	 */
+	// Intentamos cargar el .env
+	err := godotenv.Load(envFile)
+
+	// Si hay un error, verificamos si es porque el archivo no existe
+	if err != nil {
+		// Imprimimos un mensaje amigable pero informativo
+		fmt.Println("💡 [INFO] No se encontró el archivo .env. Se usarán las variables de entorno del sistema.")
+		fmt.Println("   (Si necesitas configurar HF_API_TOKEN, crea un archivo .env en la raíz")
+		fmt.Println("   usa .env.exmaple como referencia)")
+		fmt.Println("-----------------------------------------------------------------------")
+	}
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
